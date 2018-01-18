@@ -8,3 +8,5 @@ Introduction to Ensembling/Stacking in Python
 https://www.kaggle.com/arthurtok/introduction-to-ensembling-stacking-in-python
 XGBoost example (Python)
 https://www.kaggle.com/datacanary/xgboost-example-python
+An Interactive Data Science Tutorial
+https://www.kaggle.com/helgejo/an-interactive-data-science-tutorial
