@@ -43,14 +43,39 @@ def format_name(data):
     data['NamePrefix'] = data.Name.apply(lambda x: x.split(' ')[1])
     return data
 
+def family_size(data):
+    data['FamilySize'] = data['SibSp'] + data['Parch'] + 1
+    return data
+
+def is_alone(data):
+    data['IsAlone'] = 0
+    data.loc[data['FamilySize'] == 1, 'IsAlone'] = 1
+    return data
+    
+def simplyfy_embarked(data):
+    data['Embarked'] = data['Embarked'].fillna('S')
+    return data
+
+def simplyfy_prefix(data):
+    data['NamePrefix'] = data['NamePrefix'].replace(['Lady.','Countness.','Capt.','Col.','Don.', 'Dr.', 'Major.'
+                                                     'Rev.','Sir.','Jonkheer.','Dona.'], 'Rare')
+    data['NamePrefix'] = data['NamePrefix'].replace('Mlle.','Miss.')
+    data['NamePrefix'] = data['NamePrefix'].replace('Ms.','Miss.')
+    data['NamePrefix'] = data['NamePrefix'].replace('Mme.','Mrs.')
+    return data
+
 def drop_features(data):
-    return data.drop(['Ticket','Name','Embarked'], 1)
+    return data.drop(['FamilySize','Ticket','Name','SibSp','Parch'], 1)
 
 def transform_features(data):
     data = simplify_ages(data)
     data = simplify_fares(data)
     data = simplify_cabins(data)
     data = format_name(data)
+    data = family_size(data)
+    data = is_alone(data)
+    data = simplyfy_embarked(data)
+    data = simplyfy_prefix(data)
     data = drop_features(data)
     return data
 
@@ -61,7 +86,7 @@ test_set  = transform_features(test_set)
 #Encoding features
 from sklearn import preprocessing
 def encode_features(train_set, test_set):
-    features = ['Fare','Cabin','Age','Sex','Lname','NamePrefix']
+    features = ['Sex','Age','Fare','Cabin','Embarked','Lname','NamePrefix']
     data = pd.concat([train_set[features], test_set[features]])
     
     for feature in features:
@@ -79,6 +104,7 @@ X = train_set.drop(['Survived','PassengerId'], axis=1)
 
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
 
 # Fitting Random Forest Classification to the Training set
 from sklearn.ensemble import RandomForestClassifier
@@ -110,14 +136,14 @@ classifier = grid_obj.best_estimator_
 y_pred = classifier.fit(X_train, y_train)
 
 # Fitting Naive Bayes to the Training set
-#from sklearn.naive_bayes import GaussianNB
-#classifier = GaussianNB()
-#classifier.fit(X_train, y_train)
+from sklearn.naive_bayes import GaussianNB
+classifier = GaussianNB()
+classifier.fit(X_train, y_train)
 
-# Fitting SVM to the Training set
-#from sklearn.svm import SVC
-#classifier = SVC(kernel = 'linear', random_state = 0)
-#classifier.fit(X_train, y_train)
+#Fitting SVM to the Training set
+from sklearn.svm import SVC
+classifier = SVC(kernel = 'linear', random_state = 0)
+classifier.fit(X_train, y_train)
 
 # Predicting the Test set results
 #y_pred = classifier.predict(X_test)
@@ -125,7 +151,6 @@ y_pred = classifier.fit(X_train, y_train)
 #Predictions
 predictions = classifier.predict(X_test)
 print(accuracy_score(y_test, predictions))
-
 
 
 from sklearn.model_selection import cross_val_score
@@ -142,15 +167,3 @@ output.to_csv('titanic-predictions.csv', index = False)
 output.head()
 
 
-
-# Making the Confusion Matrix
-from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(y_test, y_pred)
-
-#Calculating accuracy
-#(TP+TN)/(TP+TN+FP+FN)
-TP = cm[0][0]
-FP = cm[0][1]
-FN = cm[1][0]
-TN = cm[1][1]
-accuracy = (TP+TN)/(TP+TN+FP+FN)
